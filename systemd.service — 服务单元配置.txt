@@ -1,0 +1,87 @@
+
+
+以 .service 为后缀的单元文件， 封装了一个被 systemd 监视与控制的进程。
+
+1、systemd.kill — 配置如何杀死进程
+KillMode=
+设置在单元停止时，杀死进程的方法。 取值范围如下： control-group, process, mixed, none
+control-group 表示杀死该单元的 cgroup 内的所有进程(对于 service 单元，还要先执行 ExecStop= 动作)。 process 表示仅杀死主进程。 mixed 表示首先向主进程发送 SIGTERM 信号(见下文)， 然后再向该单元的 cgroup 内的所有其他进程发送 SIGKILL 信号(见下文)。 none 表示仅执行 ExecStop= 动作， 而不杀死任何进程。 这会导致即使单元已经停止， 但是该单元的 cgroup 依然一直存在， 直到其中的进程全部死亡。
+
+KillMode=control-group   # 定义systemd如何停止服务
+
+
+
+
+案列一、
+配置srs：
+[Unit]
+Description=SRS daemon
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/application/srs/trunk/objs/origin.pid
+ExecStart=/usr/sbin/srs -c  /application/srs/trunk/conf/srs.conf
+ExecReload=/usr/bin/kill -HUP $MAINPID
+ExecStop=/usr/bin/kill -s QUIT $MAINPID
+PrivateTmp=True
+
+
+[Install]
+WantedBy=multi-user.target graphic.target
+
+难点：
+之前启动一直失败，失败原因：
+之前cong/srs.conf里面配置的pid是   ./objs.pid
+后面改成就好了
+pid                 /application/srs/trunk/objs/origin.pid;
+
+
+案例二、
+配置mona
+root@vm3 MonaServer]# cat /usr/lib/systemd/system/mona.service
+[Unit]
+Description=MONA daemon
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/tmp/mona.pid
+ExecStart=/usr/bin/mona --pidfile=/tmp/mona.pid
+ExecReload=/usr/bin/kill -HUP $MAINPID
+ExecStop=/usr/bin/kill -s QUIT $MAINPID
+PrivateTmp=True
+
+
+[Install]
+WantedBy=multi-user.target graphic.target
+
+难点：
+一直找不到pid文件，配置文件也没有指定。后来发现，MonaServer  --pidfile=/tmp/mona.pid    启动的时候可以制定pid文件。
+
+
+
+
+案例三、nginx经典案例配置
+[Unit]
+Description=The nginx HTTP and reverse proxy server
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=forking
+PIDFile=/run/nginx.pid
+# Nginx will fail to start if /run/nginx.pid already exists but has the wrong
+# SELinux context. This might happen when running `nginx -t` from the cmdline.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1268621
+ExecStartPre=/usr/bin/rm -f /run/nginx.pid
+ExecStartPre=/usr/sbin/nginx -t
+ExecStart=/usr/sbin/nginx
+ExecReload=/bin/kill -s HUP $MAINPID
+KillSignal=SIGQUIT
+TimeoutStopSec=5
+KillMode=process
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
