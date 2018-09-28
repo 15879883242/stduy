@@ -10,7 +10,7 @@ vpnserver
 3、配置server.conf
 #cp /usr/share/doc/openvpn-2.3.14/sample/sample-config-files/server.conf  /etc/openvpn/
 #cat /etc/openvpn/server.conf 
-local 125.215.155.145
+local IP   #这个ip要和客户端能ping通的
 port 1194
 proto udp
 dev tun
