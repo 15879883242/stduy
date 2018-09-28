@@ -1,0 +1,319 @@
+centos 7.4
+   yum 安装
+        1. 安装EPEL源       
+        yum -y install epel-release.noarch
+		
+        2. 安装支持firewalld的fail2ban
+        yum -y install fail2ban-firewalld fail2ban-systemd
+        
+        3. 安装相关软件，让fail2ban可以通过postfix发送提醒邮件（可选）
+        安装配置postfix用于发送提醒邮件请点这里 
+        yum -y install postfix whois fail2ban-sendmail
+        systemctl enable postfix
+        systemctl start postfix
+		
+        4. 设定fail2ban        
+        新建jail.local来覆盖fail2ban的一些默认规则：
+        vi /etc/fail2ban/jail.local
+ 
+       [DEFAULT]
+       ignoreip = 127.0.0.1/8
+       bantime  = 86400
+       findtime = 600
+       maxretry = 3
+       banaction = firewallcmd-ipset
+    
+       [sshd]
+       enabled = true
+       filter  = sshd
+       port    = 22
+       logpath = /var/log/secure
+	  
+	    发邮件配置（可选）   
+       [DEFAULT]
+        sender = fail2ban@ifshow.com
+        destemail = admin@ifshow.com
+        #action = %(action_mwl)s
+		
+		#如果装有vsftpd，在配置文件最后加上以下内容（port为vsftpd的登录和数据端口）（可选）
+        [vsftpd]
+        enabled = true
+        port = 2121,2122
+		
+		配置说明
+        [DEFAULT]
+        bantime = 86400
+        findtime = 300
+        maxretry = 3
+        sender = fail2ban@ifshow.com
+        destemail = admin@ifshow.com
+        #action = %(action_mwl)s
+        [sshd]
+        enabled = true
+        port = 2345
+        [sshd-ddos]
+        enabled = true
+        port = 2345
+        bantime是被封IP禁止访问的时间，设定值为24小时，单位是秒。
+        findtime是检测时间，在此时间内超过规定的次数会激活fail2ban，单位是秒。
+        maxretry是允许错误登录的最大次数，和findtime配合使用。
+        sender为邮件发送者，destemail为接收通知邮箱。
+        action是触发fail2ban采取的动作，action_mwl为禁IP+发通知邮件+写入日志。
+        sshd区块的enabled = true开启对SSH服务的防护，port为SSH的自定义端口。
+        sshd-ddos区块的enabled = true开启SSH-DDOS防护，port为SSH的自定义端口。
+        	   
+	   
+	   5、确保 firewall 已经打开        
+        systemctl enable firewalld
+        systemctl start firewalld
+		
+	   6、相关操作命令
+	   systemctl enable fail2ban
+       systemctl start fail2ban
+       systemctl status fail2ban
+       systemctl restart  fail2ban	
+	   
+	   7、fail2ban常用命令        
+        查看SSH服务监护状态，能看到当前被禁IP。        
+        1、 fail2ban-client status sshd
+	
+		
+	    删除禁止ip
+         fail2ban-client set sshd unbanip 192.168.0.124  
+		
+        在SSH监护服务忽略IP列表（白名单）中添加IP 192.168.111.111        
+        fail2ban-client set sshd addignoreip 192.168.111.111
+		
+        在SSH监护服务忽略IP列表（白名单）中删除IP 192.168.111.111        
+        fail2ban-client set sshd delignoreip 192.168.111.111
+		
+        查看fail2ban日志        
+        tail /var/log/fail2ban.log
+	 
+
+
+    编译安装
+	    wget https://codeload.github.com/fail2ban/fail2ban/tar.gz/0.10
+        download fail2ban-0.10.tar.gz，然后rz到服务器，
+        tar -xvf fail2ban-0.10.tar.gz
+        
+		进入解压后的目录，查看README       
+        [root@localhost tmp]# cd fail2ban-0.10/
+        [root@localhost fail2ban-0.10]# cat README.md #查看python版本是否满足
+        [root@localhost fail2ban-0.10]# python --version
+        Python 2.7.5
+		
+        安装fail2ban
+        [root@localhost fail2ban-0.10]#python setup.py install
+        
+        添加系统服务
+        fail2ban.service 服务脚本配置文件
+        [Unit]
+        Description=Fail2Ban Service
+        Documentation=man:fail2ban(1)
+        After=network.target iptables.service firewalld.service
+        PartOf=iptables.service firewalld.service
+        
+        [Service]
+        Type=simple
+        ExecStartPre=/bin/mkdir -p /var/run/fail2ban
+        ExecStart=/usr/bin/fail2ban-server -xf start
+        # if should be logged in systemd journal, use following line or set logtarget to stdout in fail2ban.local
+        # ExecStart=/usr/bin/fail2ban-server -xf --logtarget=stdout start
+        ExecStop=/usr/bin/fail2ban-client stop
+        ExecReload=/usr/bin/fail2ban-client reload
+        PIDFile=/var/run/fail2ban/fail2ban.pid
+        Restart=on-failure
+        RestartPreventExitStatus=0 255
+        
+        [Install]
+        WantedBy=multi-user.target
+        
+        把配置文件加入systemd
+        [root@localhost system]# ls f*
+        final.target       firewalld.service  fprintd.service    fstrim.service     fstrim.timer
+		
+        #拷贝文件到服务统一位置/usr/lib/systemd/system
+        [root@localhost system]# cp /tmp/fail2ban-0.10/files/fail2ban.service  /usr/lib/systemd/system
+        [root@localhost system]# ls -l /etc/systemd/system/fail2ban.service
+        lrwxrwxrwx. 1 root root 16 Jul 14 17:41 /etc/systemd/system/fail2ban.service -> fail2ban.service		
+        [root@localhost multi-user.target.wants]# ln -s /usr/lib/systemd/system/fail2ban.service ./multi-user.target.wants/
+        [root@localhost multi-user.target.wants]# systemctl list-unit-files -t service |grep fail2ban.service
+        fail2ban.service                              enabled
+        [root@localhost files]# systemctl start fail2ban.service
+        [root@localhost files]# systemctl status fail2ban.service
+        ● fail2ban.service - Fail2Ban Service
+           Loaded: loaded (/usr/lib/systemd/system/fail2ban.service; enabled; vendor preset: disabled)
+           Active: active (running) since Fri 2017-07-14 18:04:26 CST; 12s ago
+             Docs: man:fail2ban(1)
+          Process: 72114 ExecStartPre=/bin/mkdir -p /var/run/fail2ban (code=exited, status=0/SUCCESS)
+         Main PID: 72116 (fail2ban-server)
+           CGroup: /system.slice/fail2ban.service
+                   └─72116 /usr/bin/python /usr/bin/fail2ban-server -xf start
+				   
+        配置文件
+        [root@localhost fail2ban]# ls -1
+        action.d                             #定义fail2ban的操作，iptables、mails、 
+        fail2ban.conf                         #定义日志级别、日志位置、socket文件位置
+        fail2ban.d          
+        filter.d                              #条件，过滤日志设置
+        jail.conf                             #主要配置文件，模块。启动ban动作服务和动作阀值
+        jail.d
+        paths-arch.conf
+        paths-common.conf
+        paths-debian.conf
+        paths-fedora.conf
+        paths-freebsd.conf
+        paths-opensuse.conf
+        patahs-osx.conf
+		
+        修改 fail2ban.conf配置文件        
+        [root@localhost files]# vim /etc/fail2ban/jail.conf
+        限制时间
+        # "bantime" is the number of seconds that a host is banned.
+          bantime  = 3600                         #默认为秒，指定分钟后面m，这里指定的是1小时
+        时间间隔
+        # A host is banned if it has generated "maxretry" during the last "findtime"
+        # seconds.
+          findtime  = 60
+        次数
+        # "maxretry" is the number of failures before a host get banned.
+        maxretry = 200
+        backend
+        # "backend" specifies the backend used to get files modification.
+        # Available options are "pyinotify", "gamin", "polling", "systemd" and "auto".
+        # This option can be overridden in each jail as well.
+        #
+        # pyinotify: requires pyinotify (a file alteration monitor) to be installed.
+        #              If pyinotify is not installed, Fail2ban will use auto.
+        # gamin:     requires Gamin (a file alteration monitor) to be installed.
+        #              If Gamin is not installed, Fail2ban will use auto.
+        # polling:   uses a polling algorithm which does not require external libraries.
+        # systemd:   uses systemd python library to access the systemd journal.
+        #              Specifying "logpath" is not valid for this backend.
+        #              See "journalmatch" in the jails associated filter config
+        # auto:      will try to use the following backends, in order:
+        #              pyinotify, gamin, polling.
+        #
+        # Note: if systemd backend is chosen as the default but you enable a jail
+        #       for which logs are present only in its own log files, specify some other
+        #       backend for that jail (e.g. polling) and provide empty value for
+        #       journalmatch. See https://github.com/fail2ban/fail2ban/issues/959#issuecomment-74901200
+        backend = auto
+        
+        # true:  jail will be enabled and log files will get monitored for changes
+        # false: jail is not enabled
+        enabled = false
+        
+        # HTTP servers
+        #
+        
+        [apache-auth]    #检测验证失败
+        
+        port     = http,https
+        logpath  = %(apache_error_log)s
+        
+        
+        [apache-badbots]          #检测抓取邮件地址的爬虫
+        # Ban hosts which agent identifies spammer robots crawling the web
+        # for email addresses. The mail outputs are buffered.
+        port     = http,https
+        logpath  = %(apache_access_log)s
+        bantime  = 48h
+        maxretry = 1
+        [apache-noscript]  #漏洞和PHP脆弱性扫描
+        
+        port     = http,https
+        logpath  = %(apache_error_log)s
+        
+        
+        [apache-overflows]     #溢出检测
+        
+        port     = http,https
+        logpath  = %(apache_error_log)s
+        maxretry = 2
+        
+        
+        [apache-nohome]     #检测在服务器查找主目录
+        
+        port     = http,https
+        logpath  = %(apache_error_log)s
+        maxretry = 2
+        
+        
+        [apache-botsearch]
+        
+        port     = http,https
+        logpath  = %(apache_error_log)s
+        maxretry = 2
+        
+        
+        [apache-fakegooglebot]
+        port     = http,https
+        logpath  = %(apache_access_log)s
+        maxretry = 1
+        ignorecommand = %(ignorecommands_dir)s/apache-fakegooglebot <ip>
+        
+        
+        [apache-modsecurity]
+        
+        port     = http,https
+        logpath  = %(apache_error_log)s
+        maxretry = 2
+        
+        
+        [apache-shellshock]
+        
+        port    = http,https
+        logpath = %(apache_error_log)s
+        maxretry = 1
+        
+        
+        [openhab-auth]
+        
+        filter = openhab
+        action = iptables-allports[name=NoAuthFailures]
+        logpath = /opt/openhab/logs/request.log
+        
+		日志过滤器存放位置        
+        /etc/fail2ban/filter.d
+        [root@localhost filter.d]# cd /etc/fail2ban/filter.d
+        [root@localhost filter.d]# ls
+        3proxy.conf                domino-smtp.conf        mysqld-auth.conf      selinux-common.conf
+        apache-auth.conf           dovecot.conf            nagios.conf           selinux-ssh.conf
+        apache-badbots.conf        dropbear.conf           named-refused.conf    sendmail-auth.conf
+        apache-botsearch.conf      drupal-auth.conf        nginx-botsearch.conf  sendmail-reject.conf
+        apache-common.conf         ejabberd-auth.conf      nginx-http-auth.conf  sieve.conf
+        apache-fakegooglebot.conf  exim-common.conf        nginx-limit-req.conf  slapd.conf
+        apache-modsecurity.conf    exim.conf               nsd.conf              sogo-auth.conf
+        apache-nohome.conf         exim-spam.conf          openhab.conf          solid-pop3d.conf
+		
+        action目录：      
+        [root@localhost action.d]# cd /etc/fail2ban/action.d
+        [root@localhost action.d]# ls
+        abuseipdb.conf                       mail-buffered.conf
+        apf.conf                             mail.conf
+        badips.conf                          mail-whois-common.conf
+        badips.py                            mail-whois.conf
+        blocklist_de.conf                    mail-whois-lines.conf
+        bsd-ipfw.conf                        mynetwatchman.conf
+        cloudflare.conf                      netscaler.conf
+        complain.conf                        nftables-allports.conf
+        dshield.conf                         nftables-common.conf
+
+清除登陆系统成功的记录
+[root@localhost root]# echo > /var/log/wtmp //此文件默认打开时乱码，可查到ip等信息
+[root@localhost root]# 	 //此时即查不到用户登录信息
+清除登陆系统失败的记录
+[root@localhost root]# echo > /var/log/btmp //此文件默认打开时乱码，可查到登陆失败信息
+[root@localhost root]# lastb //查不到登陆失败信息
+清除历史执行命令
+[root@localhost root]# history -c //清空历史执行命令
+[root@localhost root]# echo > ./.bash_history //或清空用户目录下的这个文件即可
+终极一键
+echo > /var/log/wtmp&&echo > /var/log/btmp&&history -c
+
+
+==============
+https://yq.aliyun.com/ziliao/129228
+https://www.centos.bz/2018/01/centos-7安装fail2banfirewalld防止ssh爆破与cc攻击/

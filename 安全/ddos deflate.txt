@@ -1,0 +1,51 @@
+ab -n 2000 -c 200 http://192.168.0.211/index.html    压力测试
+
+
+tail access_log -n 1000 |awk '{print $1}'|sort |uniq -c |sort -t : -k 1 -r |awk '{if ($1>50) print $2}'>drop_ip.txt
+/usr/local/ddos/ddos.sh -c
+wget https://github.com/jgmdev/ddos-deflate/archive/master.zip
+
+/usr/local/ddos/ddos.sh [OPTIONS] [N]
+
+N：tcp / udp连接数（默认为150）
+
+OPTIONS
+-h | - 帮帮我：
+
+显示帮助屏幕。
+
+-c | --cron：
+
+创建cron作业以定期运行脚本（默认为1分钟）。
+
+-i | - 忽略列表：
+
+列出白名单的IP地址。
+
+-b | --bans列表：
+
+列出当前禁止的IP地址。
+
+-u | --unban：
+
+取消给定的IP地址。
+
+-d | - 开始：
+
+初始化守护程序以监视连接。
+
+-s | - 停止：
+
+停止守护进程。
+
+-t | - 状态：
+
+如果当前正在运行，则显示守护程序和pid的状态。
+
+-v | - 视图：
+
+显示与服务器的活动连接。
+
+-k | - 杀：
+
+阻止所有IP地址超过N个连接。

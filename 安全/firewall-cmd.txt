@@ -1,0 +1,15 @@
+firewalld跟iptables比起来，不好的地方是每个服务都需要去设置才能放行，因为默认是拒绝。而iptables里默认是每个服务是允许，需要拒绝的才去限制。
+
+1、禁止别人ping攻击你
+别人ping你。你不回应
+firewall-cmd --permanent --zone=public --add-icmp-block=echo-request
+  可以ping通，  把add改remove
+firewall-cmd --permanent --zone=public --remove-icmp-block=echo-request
+
+
+ping不通
+# firewall-cmd --permanent --add-rich-rule='rule protocol value=icmp drop'
+丢弃所有icmp包
+
+
+

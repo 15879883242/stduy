@@ -1,0 +1,151 @@
+文章链接 ：https://blog.csdn.net/fuzhongfaya/article/details/81085472
+ 
+  安装DDoS deflate自动抵御DDOS攻击： 
+  参考文章 https://zhuanlan.zhihu.com/p/30408297
+
+1、如何确认自己遭到了攻击， 
+netstat -ntu | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -n
+     14 111.67.96.99
+     22 125.215.155.145
+      1 192.168.10.11
+      1 192.168.10.12
+      1 192.168.10.13
+      1 192.168.10.24
+     34 45.249.93.163
+
+ 每个IP几个、十几个或几十个连接数都还算比较正常，如果像上面成百上千肯定就不正常了。 
+ 
+ 
+ 一、攻击手段
+ 1、CC 向目标发起大量真实的http请求，最终消耗掉大量的并发资源，拖慢整个网站甚至彻底拒绝服务
+ 2、DNS Query Flood就是攻击者操纵大量傀儡机器，对目标发起海量的域名查询请求
+ 3、SYN Flood攻击
+ SYN攻击是利用TCP/IP协议3次握手的原理，发送大量的建立连接的网络包，但不实际建立连接，最终导致被攻击服务器的网络队列被占满，无法被正常用户访问。
+
+ TCP连接就建立完成。TCP协议为了实现可靠传输，在三次握手的过程中设置了一些异常处理机制。第三步中如果服务器没有收到客户端的最终ACK确认报文，会一直处于SYN_RECV状态，将客户端IP加入等待列表，并重发第二步的SYN+ACK报文。重发一般进行3-5次，大约间隔30秒左右轮询一次等待列表重试所有客户端。另一方面，服务器在自己发出了SYN+ACK报文后，会预分配资源为即将建立的TCP连接储存信息做准备，这个资源在等待重试期间一直保留。更为重要的是，服务器资源有限，可以维护的SYN_RECV状态超过极限后就不再接受新的SYN报文，也就是拒绝新的TCP连接建立。
+  Linux内核提供了若干SYN相关设置，使用命令：
+  #sysctl -a |grep syn
+  fs.quota.syncs = 0
+fs.xfs.inherit_sync = 1
+fs.xfs.xfssyncd_centisecs = 3000
+sysctl: reading key "net.ipv6.conf.all.stable_secret"
+sysctl: reading key "net.ipv6.conf.default.stable_secret"
+sysctl: reading key "net.ipv6.conf.eth0.stable_secret"
+sysctl: reading key "net.ipv6.conf.eth1.stable_secret"
+sysctl: reading key "net.ipv6.conf.lo.stable_secret"
+net.ipv4.tcp_max_syn_backlog = 1024
+net.ipv4.tcp_syn_retries = 5
+net.ipv4.tcp_synack_retries = 5
+net.ipv4.tcp_syncookies = 1
+net.ipv6.conf.all.max_desync_factor = 600
+net.ipv6.conf.default.max_desync_factor = 600
+net.ipv6.conf.eth0.max_desync_factor = 600
+net.ipv6.conf.eth1.max_desync_factor = 600
+net.ipv6.conf.lo.max_desync_factor = 600
+net.ipv6.conf.tun0.max_desync_factor = 600
+net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60
+net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 120
+
+二、方法使用
+ tcp_max_syn_backlog是SYN队列的长度，tcp_syncookies是一个开关，是否打开SYN Cookie功能，该功能可以防止部分SYN攻击。tcp_synack_retries和tcp_syn_retries定义SYN的重试次数。
+
+  加大SYN队列长度可以容纳更多等待连接的网络连接数，打开SYN Cookie功能可以阻止部分SYN攻击，降低重试次数也有一定效果。
+
+  1、调整上述设置的方法是：
+    增加SYN队列长度到2048：
+	sysctl -w net.ipv4.tcp_max_syn_backlog=2048
+	
+  2、打开SYN COOKIE功能：
+	sysctl -w net.ipv4.tcp_syncookies=1
+  3、降低重试次数：
+   sysctl -w net.ipv4.tcp_synack_retries=3
+   sysctl -w net.ipv4.tcp_syn_retries=3
+  
+
+  3.安装iptables对特定ip进行屏蔽。
+  A.安装iptables和系统内核版本对应的内核模块kernel-smp-modules-connlimit
+  B. 配置相应的iptables规则  
+  (1)控制单个IP的最大并发连接数
+  iptables -I INPUT -p tcp --dport 80 -m connlimit --connlimit-above 50 -j REJECT
+   #允许单个IP的最大连接数为 50
+    (2)控制单个IP在一定的时间（比如60秒）内允许新建立的连接数
+	1、iptables -A INPUT -p tcp –dport 80 -m recent –name BAD_HTTP_ACCESS –update –seconds 60 \ –hitcount 30 -j REJECT
+	2、iptables -A INPUT -p tcp –dport 80 -m recent –name BAD_HTTP_ACCESS –set -j ACCEPT
+	 #单个IP在60秒内只允许最多新建30个连接
+	(3)用iptables屏蔽IP
+	iptables -I RH-Lokkit-0-50-INPUT 1 -p tcp -m tcp -s 213.8.166.227 --dport 80 --syn -j REJECT
+	 (4)使用iptables禁止ping：	
+	 iptables -A INPUT -p icmp -m icmp --icmp-type 8 -m limit --limit 6/min --limit-burst 2 -j ACCEPT-A INPUT -p icmp -m icmp --icmp-type 8 -j REJECT --reject-with icmp-port-unreachable
+	 (5)允许某ip连接
+	 iptables -I RH-Firewall-1-INPUT 1 -p tcp -m tcp -s 192.168.0.51 --syn -j ACCEPT
+	 
+	 
+	 C. 验证
+	 （1）工具：flood_connect.c（用来模拟攻击)
+   （2）查看效果：
+    使用
+
+  watch ‘netstat -an | grep:21 | \ grep< 模拟攻击客户机的IP>| wc -l’
+    实时查看模拟攻击客户机建立起来的连接数，
+    使用
+    watch ‘iptables -L -n -v | \grep< 模拟攻击客户机的IP>’
+    查看模拟攻击客户机被 DROP 的数据包数。
+
+    D．注意
+
+    为了增强iptables防止CC攻击的能力，最好调整一下ipt_recent的参数如下：
+ #cat/etc/modprobe.conf
+
+options ipt_recent ip_list_tot=1000 ip_pkt_list_tot=60
+
+#记录1000个IP地址，每个地址记录60个数据包
+
+#modprobe ipt_recent
+
+E.可编写脚本自动提娶攻击ip然后自动屏蔽：
+
+ 
+
+
+ 
+*/2 * * * * /usr/local/nginx/var/log/drop.sh
+
+#!/bin/sh
+
+cd /usr/local/nginx/var/log
+
+tail access.log -n 1000 |grep vote.php | |sort |uniq -c |sort -nr |awk '{if ($2!=null && $1>50)}' > drop_ip.txt
+
+for i in `cat drop_ip.txt`
+
+do
+
+/sbin/iptables -I INPUT -s $i -j DROP;
+
+done
+
+ 
+
+ 这shell 每几分钟执行一次，就可自动屏蔽那些不正常IP，相信大家都看的懂，下面是针对连接数屏蔽代码
+
+ 
+
+
+ 
+#!/bin/sh
+
+/bin/netstat -ant |grep 80 |awk '{print $5}' |awk -F : '{print $1}' |sort |uniq -c |sort -rn |grep -v -E '192.168|127.0' |awk '{if ($2!=null && $1>50)}' > drop_ip.txt
+
+for i in `cat drop_ip.txt`
+
+do
+
+/sbin/iptables -I INPUT -s $i -j DROP;
+
+done
+
+ 
+
+   说下，grep -v -E '192.168|127.0' 也就是排除内网IP，免得把自己给屏蔽了，当然还可以加些自己的IP。
+   
+   5.APACHE上安装mod_evasive 组件增强抵御力
