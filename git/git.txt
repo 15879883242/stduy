@@ -1,0 +1,54 @@
+﻿windows中软件 Git-2.16.1-64-bit
+             TortoiseGit-2.5.0.0-64bit
+			 
+			 git@192.168.0.92:pub.git/test   连接然后拉取
+			 在windown中  右键————>GIT GUI Here--->HELP--->SHOW SSHKEY--->复制粘贴到服务器的authorized_keys
+			 
+			然后把公钥传到git/.shh/authorized_keys中
+
+linux中
+yum install git -y
+
+useradd git
+
+mkdir /home/git/pub.git
+
+git init --bare /home/git/pub.git   创建远程仓库（远程仓库没有工作区）
+
+mkdir /home/git/pub.git/test  
+
+git init test    创建本地仓库（有工作区）
+
+设置用户和邮箱
+git config --global user.name "root"     
+                
+git config --global user.email "root@localhost"
+
+
+vi pub.git/.git/config
+增加：
+	在git/config中添加
+[receive]
+        denyCurrentBranch = ignore
+
+git   log  显示日志（应切换到仓库目录下）
+
+git add file  将文件添加到缓存区
+
+git reset HEAD fiel  将文件从缓存区撤出
+
+git commit -m "描述信息"
+
+git tag 给最近版本打标签
+
+git reflog 查看所有版本
+
+git reset --head  版本号或者标签   #切换到那个版本
+
+ mkdir /git
+
+git clone root@192.168.0.95:/pub.git  /git  从远仓库克隆到本地。
+
+
+
+git注意事项：当你要提交文件前，先提交到本地，在拉取新的文件，在推送到仓库
