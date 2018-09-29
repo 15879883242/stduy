@@ -17,21 +17,23 @@ KillMode=control-group   # 定义systemd如何停止服务
 
 案列一、
 配置srs：
-[Unit]
-Description=SRS daemon
-After=network.target
+[Unit]                          #启动顺序与依赖关系。
+Description=SRS daemon                      #描述
+After=network.target                        #表示srs必须在network.server启动之后才能启动
 
-[Service]
-Type=simple
-PIDFile=/application/srs/trunk/objs/origin.pid
-ExecStart=/usr/sbin/srs -c  /application/srs/trunk/conf/srs.conf
-ExecReload=/usr/bin/kill -HUP $MAINPID
-ExecStop=/usr/bin/kill -s QUIT $MAINPID
+[Service]                       #区块定义如何启动当前服务。
+Type=simple                                                               #（默认值） systemd认为该服务将立即启动
+PIDFile=/application/srs/trunk/objs/origin.pid                            #以便 systemd 能够跟踪服务的主进程
+ExecStart=/usr/sbin/srs -c  /application/srs/trunk/conf/srs.conf          #启动服务执行的命令
+ExecReload=/usr/bin/kill -HUP $MAINPID                                    #重启服务执行的命令
+ExecStop=/usr/bin/kill -s QUIT $MAINPID                                   #停止服务执行的命令
 PrivateTmp=True
 
 
 [Install]
-WantedBy=multi-user.target graphic.target
+WantedBy=multi-user.target graphic.target                                   #可以开机启动
+
+注意：所有的启动设置之前，都可以加上一个连词号（-），表示"抑制错误"，即发生错误的时候，不影响其他命令的执行。比如，EnvironmentFile=-/etc/sysconfig/sshd（注意等号后面的那个连词号），就表示即使/etc/sysconfig/sshd文件不存在，也不会抛出错误。
 
 难点：
 之前启动一直失败，失败原因：
@@ -71,7 +73,7 @@ WantedBy=multi-user.target graphic.target
 
 案例三、nginx经典案例配置
 [Unit]
-Description=The nginx HTTP and reverse proxy server
+Description=The nginx HTTP and reverse proxy server                                
 After=network.target remote-fs.target nss-lookup.target
 
 [Service]
@@ -91,6 +93,9 @@ PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
+
+
+
 
 <<<<<<< HEAD
 
