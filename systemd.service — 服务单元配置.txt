@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> d2dd52b63d06847d0f5577f1f23a2bf192cb557f
 以 .service 为后缀的单元文件， 封装了一个被 systemd 监视与控制的进程。
 
 1、systemd.kill — 配置如何杀死进程
@@ -55,7 +60,14 @@ PrivateTmp=True
 WantedBy=multi-user.target graphic.target
 
 难点：
+<<<<<<< HEAD
 一直找不到pid文件，配置文件也没有指定。后来发现，MonaServer  --pidfile=/tmp/mona.pid    启动的时候可以指定pid文件。
+=======
+一直找不到pid文件，配置文件也没有指定。后来发现，MonaServer  --pidfile=/tmp/mona.pid    启动的时候可以制定pid文件。
+
+
+
+>>>>>>> d2dd52b63d06847d0f5577f1f23a2bf192cb557f
 
 案例三、nginx经典案例配置
 [Unit]
@@ -80,4 +92,7 @@ PrivateTmp=true
 [Install]
 WantedBy=multi-user.target
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> d2dd52b63d06847d0f5577f1f23a2bf192cb557f
