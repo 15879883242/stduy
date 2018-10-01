@@ -1,0 +1,17 @@
+yum install net-tools  wget perl -y
+wget   http://mirror.centos.org/centos/6/os/x86_64/Packages/libaio-0.3.107-10.el6.x86_64.rpm
+rpm -ivh libaio-0.3.107-10.el6.x86_64.rpm
+rpm -e  --nodeps mariadb-libs-5.5.35-3.el7.x86_64
+rpm -ivh  mysql-community-common-5.7.16-1.el7.x86_64.rpm
+rpm -ivh mysql-community-libs-5.7.18-1.el7.x86_64.rpm
+rpm -ivh mysql-community-client-5.7.18-1.el7.x86_64.rpm
+rpm -ivh mysql-community-server-5.7.18-1.el7.x86_64.rpm
+echo "skip-grant-tables" >>/etc/my.cnf
+echo "skip-name-resolve" >>/etc/my.cnf
+update mysql.user set authentication_string=password('LIUlu@3810') where user='root'&&host='localhost';
+set global validate_password_policy=0; 
+set global validate_password_length=3;
+set global validate_password_mixed_case_count=0;  
+
+set global validate_password_number_count=3;
+grant all privileges on *.* to freedom@'%' identified by 'joincc@2017';
