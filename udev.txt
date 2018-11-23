@@ -16,4 +16,4 @@ vi  /etc/udev/rules.d/70-persistent-net.rules   #添加
 #ATTR{address}=="00:0c:29:dc:dd:ad"是网卡的MAC地址
 udevadm  info -a -p  /sys/class/net/eth1 #查看网卡地址
 
-SUBSYSTEM=="net",ACTION=="add",DRIVERS=="?*",ATTR{address}=="00:0c:29:dc:dd:ad",ATTR｛type｝=="1" ,KERNEL=="eth*",NAME="eth
+SUBSYSTEM=="net",ACTION=="add",DRIVERS=="?*",ATTR{address}=="00:0c:29:dc:dd:ad",ATTR｛type｝=="1" ,KERNEL=="eth*",NAME="eth0"  注意把这条mac地址换成自己网卡的mac地址

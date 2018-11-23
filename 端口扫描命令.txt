@@ -1,0 +1,3 @@
+使用tcping ip port
+open  表示已经打开端口
+closed 相反

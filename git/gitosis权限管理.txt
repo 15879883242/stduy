@@ -1,0 +1,368 @@
+系统版本信息
+[git@localhost repositories]$ cat /etc/redhat-release
+CentOS Linux release 7.5.1804 (Core) 
+
+安装依赖
+yum install python-setuptools
+
+Git安装
+yum 安装
+yum install git 
+
+编译安装
+root@localhost ~] # wget https://www.kernel.org/pub/software/scm/git/git-2.5.0.tar.gz
+[root@localhost ~]# tar -zxf git-2.5.0.tar.gz
+[root@localhost ~]# cd git-2.5.0
+[root@localhost  git-2.5.0]# ./configure --prefix=/usr/local/git
+[root@localhost  git-2.5.0]# make && make install
+[root@localhost  git-2.5.0]# ln -s /usr/local/git/bin/* /usr/bin/
+[root@localhost  git-2.5.0]# git --version   #显示版本号，安装成功
+
+
+Gitosis配置
+Gitosis安装
+权限管理工具gitosis的安装，需要用到python-setuptools
+git clone https://github.com/tv42/gitosis.git
+cd gitosis
+sudo python setup.py install
+
+Gitosis初始化
+服务器上生成git用户，使用git用户并初始化gitosis
+创建git版本管理用户 git
+useradd -c "git version manager" -m -d /home/git -s /bin/bash git 
+passwd git 
+su - git
+
+公钥管理
+ssh-keygen -t rsa    一直回车
+将私钥放在下载到C:\Users\当前用户\.ssh目录下
+修改git权限
+visudo
+git     ALL=(ALL)      NOPASSWD: ALL
+
+su -git  
+sudo -H -u git gitosis-init < /tmp/id_dsa.pub   
+或
+gitosis-init < ./.ssh/id_rsa.pub  
+
+在/home/git 目录下的产生会自动产生gitosis  repositories两个文件
+repositories  存放仓库的目录
+
+授权
+sudo chmod 755 /home/git/repositories/gitosis-admin.git/hooks/post-update  
+
+
+Clone项目管理仓库
+gitserver 本地克隆（gitserver）
+git clone git@gitserver:gitosis-admin.git
+
+远程克隆（Windows主机）
+git clone git@gitserver:gitosis-admin.git
+
+gitosis-admin.git项目仓库目录：
+  gitosis.conf 文件是用来设置用户、仓库和权限的控制文件。
+  keydir 目录则是保存用户公钥的地方— 每人一个。
+    在 keydir 里的文件名（比如上面的 scott.pub）就是用户名scott
+    — Gitosis 会自动从使用 gitosis-init 脚本导入的公钥尾部的描述中获取该名字。
+
+	
+	
+	配置文件参考实例
+gitosis.conf 默认的配置例子
+[gitosis]
+
+[group gitosis-admin]
+members = git@localhost.localdomain
+writable = gitosis-admin
+
+#=================添加igqd组、用户git(所有权限)、仓库名为igqd =========================
+##可写
+[group igqd]                        #组名称
+writable = igqd             # (仓库)项目名称
+members = git                       #组成员（公钥的名称）
+
+
+#=================添加ighd_ro组、用户yw（只读）、仓库名为ighd=========================
+##只读权限
+[group ighd_ro]    
+members = yw
+readonly = ighd
+
+#=================添加ighd组、用户 hdllb hdsqs、仓库名为hd_tools=========================
+##在组名前加上 @ 前缀），自动继承该组的成员：
+[group ighd]
+members = hdllb hdsqs
+
+[group ighd]
+members   = @ighd
+writable  = hd_tools
+
+#添加ighd组以外的用户
+[group ighd_2]
+members   = @ighd igadmin
+writable  = hd_tools
+#======================================================
+
+修改gitosis.conf后要提交
+$git add .
+$git commit -a -m "add test repo"
+$git push
+
+
+
+添加新仓库
+获取最新的gitosis-admin项目管理仓库
+1、修改gitosis.conf配置文件添加tes仓库，用户为公钥的名字，
+[group test]            
+writable = test       
+members = testuser
+2、将test.pub复制到keydir目录下
+
+保存提交推送
+git commit -a -m "添加新仓库test"
+git push         
+
+修改完gitosis.conf文件后一定要先提交，在push
+
+新建本地仓库
+mkdir test
+cd test
+git init
+touch README
+git remote add origin git@localhost:test.git
+git add .
+git commit -am '初始化'
+git push origin master
+
+或
+
+git clone  git@gitserver:test.git
+
+总结：
+1、在windows创建本地仓库然后提交到gitserver 和从git server 通过git clone 到本地，gitosis会自动创建一个test.git(裸仓)，
+失败大多数是配置文件填写错误。
+-------------------------------------------------------------------------------------
+操作案例一、
+1、配置sudo权限
+vi /etc/sudoers
+git% ALL = (ALL) NOPASSWD: ALL
+2、安装git
+yum install git -y
+useradd git
+3、安装gitosis
+git clone https://github.com/tv42/gitosis.git
+cd gitosis
+sudo python setup.py install
+4、给git用户创建一对密钥
+git-keygen
+5、给git用户配置仓库
+su -git  
+sudo -H -u git gitosis-init < /tmp/id_dsa.pub   
+或
+gitosis-init < ./.ssh/id_rsa.pub  
+sudo chmod 755 /home/git/repositories/gitosis-admin.git/hooks/post-update
+6、拉取仓库到本地，然后配置权限
+git clone git@localhost:gitosis-admin.git
+
+[gitosis]
+
+[group gitosis-admin]                               组名称
+members = git@localhost.localdomain leader				 谁有权限管理gitosis-admin这个项目，如果需要添加领导管理，先把领导公钥放在 keydir目录下leader.pub然后后面添加leader,这样领导也有权力管理这个项目了。
+writable = gitosis-admin                           项目名称
+
+8、创建前端开发项目。
+sudo  mkdir  /qd               创建前端目录，方便管理前端的所有项目。
+sudo chown git:git /qd          
+cd  gitosis-admin                      切换到刚刚git clone git@localhost:gitosis-admin 目录下。
+vi gitosis.conf                       配置权限和项目
+
+[group leader]                                  给所有领导配置成一个组，方便继承
+members = git@localhost.localdomain leader        
+
+[group qd]							qd人员组名称								
+members =  xiaoming ironman        所有公钥都刚在keydir目录下
+
+[group qd_live]
+members = @qd @leader                     @qd  表示这个qd_live的权限继承qd下的成员
+writable = qd_live                   目录名叫做qd_live 可读写。
+
+9、操作完后gitosis.conf目录后
+#git add .
+#git commit -m "描述"
+#git push
+公钥都放在 ./keydir目录下，放完之后git add keydir/*  然后git commit 在push
+
+10、创建qd_live 项目
+cd /qd
+mkdir qd_live
+git init 
+touch test.txt
+git add .
+git commit -m "初始化"
+git remote add origin git@localhost:qd_live  
+git push origin master
+
+11、拉取
+git clone git@git_server_IP:qd_live.git
+
+12、给qd_live项目添加新的成员，权限只读
+cd /home/git/gitosis-admin
+vi gitosis.conf
+
+[group qd_live_ro]
+members = vm2 vm3
+readonly = qd_live
+
+注：每个人推送前，先设置好自己的邮箱，方便识别。
+
+
+gitosis.conf配置案例
+[git@vm4 ~]$ cat gitosis.conf.bak 
+[gitosis]
+
+[group gitosis-admin]
+members = igadmin@igbet.com Cheng
+writable = gitosis-admin
+
+
+
+[group igadmin_committers]
+members = Xiaomi Hexiaobei Cheng Damon igadmin@igbet.com
+
+[group igqd_committers]
+members = Qg Css Cwh Yl Zr 
+
+[group ighd_committers]
+members = Llb Sqs 
+
+[group igwebc_committers]
+members = Hpw  
+
+[group igyw_committers]
+members = Damon shifeng ironman Mint
+
+[group igui_committers]
+members = Lmy Fy 
+
+
+
+###########前端项目##############
+[group igclient_fapai]
+members   = @igqd_committers @igadmin_committers
+writable  = igclient_fapai
+
+[group igclient_pc]
+members   = @igqd_committers @igadmin_committers
+writable  = igclient_pc
+
+[group igclient_wap]
+members   = @igqd_committers @igadmin_committers
+writable  = igclient_wap
+
+[group igclient_zb]
+members   = @igqd_committers @igadmin_committers
+writable  = igclient_zb
+
+[group igclient_help]
+members   = @igqd_committers @igadmin_committers
+writable  = igclient_help
+
+###########后端项目##############
+[group ighd]
+members   = @ighd_committers  @igadmin_committers 
+writable  = ighd
+
+
+
+#############"C#"###########
+[group igwebc_api]
+members   = @igwebc_committers  @igadmin_committers
+writable  = igwebc_api
+
+[group igwebc_apisrv]
+members   = @igwebc_committers @igadmin_committers
+writable  = igwebc_apisrv
+
+[group igwebc_gl]
+members   = @igwebc_committers @igadmin_committers
+writable  = igwebc_gl
+
+[group igwebc_log]
+members   = @igwebc_committers @igadmin_committers
+writable  = igwebc_log
+
+[group igwebc_pz]
+members   = @igwebc_committers @igadmin_committers
+writable  = igwebc_pz
+
+[group igwebc_yw]
+members   = @igwebc_committers @igadmin_committers
+writable  = igwebc_yw
+
+
+
+#############运维##########
+[group igyw]
+members   = @igyw_committers @igadmin_committers
+writable  = igyw
+
+
+
+#############UI##########
+[group igui]
+members   = @igui_committers @igadmin_committers
+writable  = igui 
+
+[group igui_ro]
+members   = @igqd_committers
+readonly = igui
+ 
+ 
+ 
+ 
+###########Media################
+[group igmedia]
+members = @igadmin_committers 
+writable = igmedia
+
+
+
+
+###############开发文档###############
+[group igdocs]
+members = @igadmin_committers
+writable = igdocs
+
+[group igdocs_ro]
+members = Hpw 
+readonly = igdocs  
+
+
+
+
+###############开发工具###################
+[group igweb-tools]
+members = @igadmin_committers
+writable = igweb-tools
+
+[group igweb-test]
+members = @igadmin_committers
+writable = igweb-test
+
+[group igweb-test_ro]
+members = Css   
+readonly = igweb-test
+
+
+
+
+##############旧源码#############
+[group igoldcode]
+members = @igadmin_committers 
+writable = igoldcode
+
+
+
+
+
+

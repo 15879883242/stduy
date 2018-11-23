@@ -1,0 +1,41 @@
+什么时候需要建分支？
+        a、为自己创建私人分支，避免和其他人产生干扰
+        b、做一个具有风险性的试验性更新
+        c、整合与其他人的工作，创建一个临时分支
+        d、将一部分代码分离出来，使其独立工作
+    1） 创建分支   branch
+        # git branch test       #test为分支的名字，自定义
+        # tree .git/refs/
+            .git/refs/
+            ├── heads
+            │   ├── master
+            │   └── test
+            └── tags
+        --------------------------------------
+        # git checkout -b test          #创建并切换到test分支
+        ---------------------------------------
+    2）切换分支  checkout
+            # git checkout test
+                Switched to branch 'test'
+    3）查看当前操作的分支
+            # git branch
+                  master
+                * test
+    4）删除分支
+            # git checkout master  #先切回其他分支
+                Switched to branch 'master'
+            # git branch -d test    #再删除想要删除的分支
+                Deleted branch test (was aef4cba).
+    5）查看和比较分支
+            # git branch develop
+            # echo hi >> file2
+            # git checkout develop
+                Switched to branch 'develop'
+            # git add file2
+            # git commit -m "add file2"
+
+            分支的比较
+            # git diff master ^develop  
+	6） 提交分支
+	 git remote add origin git@localhost:test
+	git push origin test

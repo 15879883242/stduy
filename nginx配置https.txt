@@ -1,0 +1,92 @@
+参考 https://ruby-china.org/topics/31983
+使用acme.sh配置https
+证书有效期三个月，但是acme.sh会生成计划任务，自动更新证书。
+
+--with-http_ssl_module   nginx编译选项要支持这个模块。
+
+
+一、安装acme.sh
+curl https://get.acme.sh | sh
+
+source ~/.bashrc
+
+二、申请签发 SSL 证书
+acme.sh --issue -d www.test1.org -w /home/ubuntu/www/your-app/current/public
+                               你的网站                        nginx的家目录（/application/nginx/html/official）
+                                                      
+没有红，就是没有报错
+
+你的证书文件已经申请成功了，并放到了 ~/.acme.sh/ 目录里面。
+
+三、
+将 SSL 证书安装到网站的路径，并配置好 restart Nginx 的动作
+
+acme.sh --installcert -d www.test1.org  /
+--keypath /application/nginx/html/help/www.test1.org.key  /                 把/root/.acme.sh/help.igamingbet.org/下面的证书移动到指定目录。
+--fullchainpath  /application/nginx/html/help/fullchain.cer   /
+--reload cmd   "nginx -s reload"     
+
+ssl_certificate 需要设置为fullchain.cer 的值（有时生成的是pem，有时生成的是cer）；否则网站评级会是B级。
+
+四、
+生成 dhparam.pem 文件
+
+openssl dhparam -out /home/ubuntu/www/ssl/dhparam.pem 2048
+
+五、修改nginx启动ssl和跳转https
+
+server{
+
+        listen 45.249.93.163:80;  #基于域名的跳转。
+        server_name  www.test1.org  test1.org  ;
+        rewrite  ^/(.*)$ https://www.test1.org/$1 permanent;
+
+}
+
+server {
+    listen       80;
+    server_name  www.test1.org  test1.org  ;
+    listen 443 ssl;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_certificate         /application/nginx/html/official/fullchain.cer;
+    ssl_certificate_key     /application/nginx/html/official/www.test1.org.key;
+    # ssl_dhparam
+    ssl_dhparam             /application/nginx/html/help/dhparam.pem;
+
+    # Load configuration files for the default server block.
+    location / {
+        root         html/official;
+        index  index.html index.htm;
+    }
+}
+server{
+
+        listen 45.249.93.163:80;              #基于域名的跳转。                       
+	server_name  test2.org;
+        rewrite  ^/(.*)$ https://test2.org/$1 permanent; 
+
+}                    
+
+server {
+    listen   80;
+    server_name  test2.org;
+    # Load configuration files for the default server block.
+    listen 443 ssl;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_certificate         /application/nginx/html/help/fullchain.cer;
+    ssl_certificate_key     /application/nginx/html/help/test2.org.key;
+    # ssl_dhparam
+    ssl_dhparam             /application/nginx/html/help/dhparam.pem;
+
+
+    location / {
+	root         html/help;
+        index  index.html index.htm;
+    }
+}
+
+重启
+
+                                               

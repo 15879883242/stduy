@@ -1,0 +1,75 @@
+﻿sudoers
+%ig  ALL=(ALL) NOPASSWD: /bin/systemctl status zabbix-server, /usr/bin/yum, /bin/systemctl restart zabbix-server, /bin/netstat, /bin/systemctl restart zabbix-agent, /usr/bin/firewall-cmd --list-ports
+
+
+解决密钥登陆还需要输入密码的问题
+测试： ssh localhost 假如还需要输入密码：
+解决方案：查看home/git的文件是否是 
+[git@localhost ~]$ ll -d
+drwx------. 5 git git 169 9月   7 10:40 .
+drwx------. 2 git git    80 9月   7 10:29 .ssh  注：.ssh目录一定要是700
+
+ssh -p prot ip
+ scp -r -P52163 /git   192.168.0.78:/root
+ ssh-copy-id -i /root/.ssh/id_rsa.pub -p 52163 192.168.0.78     密码liulu3810
+ ssh 192.168.0.72 -p 22
+ 
+
+[ig@LINUX-1-GL-TB ~]$ cat .ssh/config 
+host mona1
+hostname 192.168.10.11
+user ig
+port 52163
+host mona2
+hostname 192.168.10.12
+user ig
+port 52163
+host mona3
+hostname 192.168.10.13
+user ig
+port 52163
+host srs1
+
+
+ansible hosts 文件配置，首先做好双机互信
+
+mona1 ansible_ssh_host=192.168.10.11 ansible_ssh_port=52163 ansible_ssh_user=ig
+mona2 ansible_ssh_host=192.168.10.12 ansible_ssh_port=52163 ansible_ssh_user=ig
+mona3 ansible_ssh_host=192.168.10.13 ansible_ssh_port=52163 ansible_ssh_user=ig
+srs1 ansible_ssh_host=192.168.10.21 ansible_ssh_port=52163 ansible_ssh_user=ig
+srs2 ansible_ssh_host=192.168.10.22 ansible_ssh_port=52163 ansible_ssh_user=ig
+srs3 ansible_ssh_host=192.168.10.23 ansible_ssh_port=52163 ansible_ssh_user=ig
+
+
+[mona]
+mona1 ansible_ssh_host=192.168.10.11 ansible_ssh_port=52163 ansible_ssh_user=ig
+mona2 ansible_ssh_host=192.168.10.12 ansible_ssh_port=52163 ansible_ssh_user=ig
+mona3 ansible_ssh_host=192.168.10.13 ansible_ssh_port=52163 ansible_ssh_user=ig
+
+
+[srs]
+srs1 ansible_ssh_host=192.168.10.21 ansible_ssh_port=52163 ansible_ssh_user=ig
+srs2 ansible_ssh_host=192.168.10.22 ansible_ssh_port=52163 ansible_ssh_user=ig
+srs3 ansible_ssh_host=192.168.10.23 ansible_ssh_port=52163 ansible_ssh_user=ig
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

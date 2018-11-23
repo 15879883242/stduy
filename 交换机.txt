@@ -1,0 +1,32 @@
+﻿minicom                                     登陆
+system-view                                  进入系统视图
+display interface brief
+ 输出信息中的protocol 求解惑
+接口的链路协议状态：
+up表示接口处于正常启动的状态
+down表示接口链路协议出现故障
+(l)表示该接口启动环回功能
+(s)表示该接口启动spoofing功能
+(b)表示该接口数据链路层处于BFD down状态
+(e)表示该接口数据链路层处于ETHOAM Down状态
+(d)表示该接口处于协议模块抑制状态
+--表示无链路协议状态
+
+int GigabitEthernet 0/0/1          使用interface命令并指定接口类型及接口编号可以进入相应的接口视图。，要先用system-view进入视图
+
+dis this                      查看视图下有哪些命令
+
+description to_                描述信息。
+
+qiut  退出                      
+return  退回到用户视图
+
+display arp                  当有人ping你的时候，你可以查看他的ip地址和mac
+
+interface Vlanif89        创建89网段的vlan
+
+ip address 192.168.89.12 255.255.255.0 给vlan添加ip
+
+
+
+

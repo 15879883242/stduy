@@ -1,0 +1,18 @@
+ldd 查看文件，发现其缺少动态库
+ldd /application/mona/MonaServer-master/MonaServer/MonaServer
+
+[root@vm3 application]# find / -name "libMonaCore.so"
+/application/mona/MonaServer-master/MonaCore/lib/libMonaCore.so   找到动态库
+
+找到动态库之后将其加入
+[root@vm3 application]# cat /etc/ld.so.conf
+include ld.so.conf.d/*.conf
+/application/mona/MonaServer-master/MonaBase/lib
+/application/mona/MonaServer-master/MonaCore/lib
+
+然后执行 ldconfig 
+
+
+
+
+案例：在systemctl start mona之后，ldd查看/usr/bin/mona，发现其缺少动态库，启动失败

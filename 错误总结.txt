@@ -1,0 +1,29 @@
+1、从 vmware vsphre中克隆机器，报错：被锁定无法访问
+解决：将被克隆的机器关机。
+
+2、当vi编辑文件的时候突然异常退出，这样会存在交换文件，按vi -r .file.swp---->然后wq---->然后rm .file.swp----
+
+3、解决flash 连接不上monaserver 日志报错：sources/MonaServer.cpp[484]  Application /anchor doesn't exist    
+原因：firewalld没有放行端口
+
+chrome://downloads/                            解决谷歌浏览器下载东西不信任，被阻止，输入chrome://downloads/   然后点击信任
+
+4、srs中的
+<- CPB time=76080220, okbps=0,0,0, ikbps=867,860,862, mr=0/350, p1stpt=20000, pnt=5000
+[2018-11-08 11:40:58.189][trace][18908][108] <- CPB time=76090220, okbps=0,0,0, ikbps=867,854,862, mr=0/350, p1stpt=20000, pnt=5000
+[2018-11-08 11:41:08.189][trace][18908][108] <- CPB time=76100220, okbps=0,0,0, ikbps=867,854,862, mr=0/350, p1stpt=20000, pnt=5000
+CPB表示公共机在推流，
+
+ <- CPB time=76110220, okbps=0,0,0, ikbps=867,854,862, mr=0/350, p1stpt=20000, pnt=5000
+[2018-11-08 11:41:19.048][trace][18908][19579] -> PLA time=8000, msgs=5, okbps=1505,0,0, ikbps=3,0,0, mw=100
+[2018-11-08 11:41:28.189][trace][18908][108] <- CPB time=76120220, okbps=0,0,0, ikbps=867,874,862, mr=0/350, p1stpt=20000, pnt=5000
+[2018-11-08 11:41:29.008][trace][18908][19579] -> PLA time=18000, msgs=5, okbps=1535,0,0, ikbps=1,0,0, mw=100
+[2018-11-08 11:41:38.189][trace][18908][108] <- CPB time=76130220, okbps=0,0,0, ikbps=867,874,862, mr=0/350, p1stpt=20000, pnt=5000
+[2018-11-08 11:41:39.088][trace][18908][19579] -> PLA time=28000, msgs=6, okbps=1577,0,0, ikbps=1,0,0, mw=100
+PLA表示有人在拉流观看
+
+3、解决安装iis没有指定文件问题。
+cmd 输入gpedit.msc--->系统--->指定。。。--->启用
+4、sql语句查询
+select * from GameUserInfo where GUAccount like '%test112%' or GUAccount like '%test113%' 
+5、 打不开191pc端，游戏配置站未能配置ip，登陆dealergc，123456，然后点合作商管理，双击AA，在最好加入---->^192.168.0.195$

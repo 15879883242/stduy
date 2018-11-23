@@ -1,0 +1,61 @@
+telnet 182.140.167.44 8000   // 探测182.140.167.44是否使用TCP协议监听8000端口（注意：telnet命令不支持UDP端口检测）
+
+
+
+regedit 
+1、第一处：
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\Wds\rdpwd\Tds\tcp]
+
+PortNumber值，默认是3389，选择十进制，改成你所希望的端口（范围在1024到65535，而且不能冲突），比如6000，见下图：
+
+2、第二处：
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp]
+
+PortNumber值，默认是3389，选择十进制，改成你所希望的端口（范围在1024到65535，而且不能冲突），比如6000，见下图：
+
+3、重启系统使设置生效。
+
+注意：两次修改的端口要一致。
+
+事实上，只修改第二处也是可以的。
+
+另外，第二处的标准连接形式是：[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\<connection>]，其中<connection>表示具体的某个RDP-TCP连接（这里应该有一个或多个类似RDP-TCP的子健，取决于你建立了多少个RDP服务），一样改掉PortNumber。
+
+二、客户端连接方法
+
+1、打开远程桌面连接：XP/2003下在运行里输入"mstsc”）即可。
+
+2、连接的格式：IP:修改后的端口，如10.10.10.10:6000
+
+win7（Server 2008 R2）防火墙设置开放某个端口
+
+有时开发过程中，别人需要连到你的本机进行网站的访问，防火墙会阻止外界的访问，你可以开放本地一个端口，让别人可以访问。
+
+1、找到防火墙
+
+
+
+2、点击高级设置
+
+
+
+3、点击“入站规则”，再点击“新建规则”：
+
+
+
+4、点击“端口”
+
+
+
+5、填写你要开放的端口号，我这里用9999：
+
+
+
+6、默认下一步，下一步，最后给你的设置取个名字，随便你，我这里用pass9999point，就是让9999端口通过
+
+
+
+7、点击完成，你可以在列表中看到你设置的规则，然后这个端口就可以被外界访问了，而不必将防火墙全部关闭：
+
